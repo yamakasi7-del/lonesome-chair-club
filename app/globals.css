@@ -1,0 +1,86 @@
+:root {
+  --paper: #F5EFE1;
+  --paper-deep: #ECE3CF;
+  --ink: #1E4A61;
+  --ink-deep: #153847;
+  --sage: #9ABD79;
+  --sage-deep: #7FA062;
+  --teal: #6D8974;
+  --teal-deep: #556E5D;
+  --ochre: #A2764B;
+  --ochre-deep: #875F3B;
+  --cream: #F8F3E7;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', 'Book Antiqua', Georgia, 'Times New Roman', serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink-deep);
+  font-family: var(--sans);
+  line-height: 1.6;
+}
+
+h1, h2, h3 { font-family: var(--serif); font-weight: 600; margin: 0; }
+p { margin: 0; }
+a { color: inherit; }
+
+.wrap { max-width: 880px; margin: 0 auto; padding: 0 24px; }
+
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--ochre-deep);
+  font-weight: 700;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.btn {
+  display: inline-block;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 13px 24px;
+  border-radius: 6px;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-family: var(--sans);
+}
+.btn-ochre { background: var(--ochre); color: var(--cream); }
+.btn-ochre:hover { background: var(--ochre-deep); }
+.btn-ochre:disabled { opacity: .6; cursor: not-allowed; }
+.btn-outline { border-color: var(--ink); color: var(--ink); background: transparent; }
+.btn-outline:hover { background: var(--ink); color: var(--cream); }
+
+.card {
+  background: var(--cream);
+  border-radius: 8px;
+  padding: 22px 22px;
+  border-top: 4px solid var(--ochre);
+}
+
+.field {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--paper-deep);
+  font-size: 15px;
+  font-family: var(--sans);
+  background: var(--cream);
+  color: var(--ink-deep);
+}
+.field:focus { outline: 2px solid var(--ochre); }
+
+.tag {
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--paper-deep);
+  color: var(--ink-deep);
+}
