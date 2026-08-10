@@ -10,7 +10,6 @@ export default function HomePage() {
             A place we talk about art, films, books, and theatre — in English, with people who are genuinely listening.
           </p>
           <div style={{ display: "flex", gap: 14, marginTop: 28, flexWrap: "wrap" }}>
-            <a className="btn btn-ochre" href="/clubs">Reserve your seat</a>
             <a className="btn btn-outline" href="/clubs" style={{ borderColor: "#B9C9B0", color: "var(--cream)" }}>See upcoming clubs</a>
           </div>
           <p style={{ marginTop: 24, fontSize: 13, color: "#B9C4B4" }}>
@@ -65,14 +64,14 @@ export default function HomePage() {
       <section style={{ background: "var(--ochre)", color: "var(--cream)", padding: "80px 0", textAlign: "center" }}>
         <div className="wrap">
           <h2 style={{ color: "var(--cream)", fontSize: 32, maxWidth: 460, margin: "0 auto 16px" }}>
-            Save your seat for August
+            Save your seat
           </h2>
           <p style={{ maxWidth: 480, margin: "0 auto", color: "#F3E5D3" }}>
             Seats are limited — make sure to book in advance. Once you register, we'll send you the topic, the
             materials for the club, the date, and the Google Meet link.
           </p>
           <a className="btn" href="/clubs" style={{ background: "var(--ink)", color: "var(--cream)", marginTop: 28, display: "inline-block" }}>
-            See upcoming clubs
+            Reserve your chair
           </a>
         </div>
       </section>

@@ -27,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <a href="/" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 700, color: "var(--ink)", textDecoration: "none" }}>
               Lonesome <em style={{ color: "var(--ochre-deep)" }}>Chair</em> Club
             </a>
-            <nav style={{ display: "flex", gap: 20, fontSize: 14 }}>
+            <nav style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 14 }}>
               <a href="/clubs" style={{ textDecoration: "none" }}>Clubs</a>
               <a href="/clubs" className="btn btn-ochre" style={{ padding: "9px 18px" }}>Reserve a seat</a>
             </nav>
@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main>{children}</main>
 
-        <footer style={{ background: "var(--ink-deep)", color: "#B9C4B4", padding: "36px 0", marginTop: 60 }}>
+        <footer style={{ background: "var(--ink-deep)", color: "#B9C4B4", padding: "36px 0" }}>
           <div className="wrap" style={{ fontSize: 13 }}>
             <div style={{ fontFamily: "var(--serif)", color: "var(--cream)", fontSize: 17, marginBottom: 6 }}>
               Lonesome Chair Club
