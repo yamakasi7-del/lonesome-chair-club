@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 export const revalidate = 60; // refresh the list at most once a minute
@@ -54,7 +55,11 @@ export default async function ClubsPage() {
                 <span style={{ fontFamily: "var(--serif)", fontStyle: "italic", fontSize: 13, color: "var(--ochre-deep)" }}>
                   {club.category}
                 </span>
-                <h3 style={{ fontSize: 20, margin: "6px 0 8px" }}>{club.title}</h3>
+                <h3 style={{ fontSize: 20, margin: "6px 0 8px" }}>
+                  <Link href={`/clubs/${club.id}`} style={{ textDecoration: "none" }}>
+                    {club.title}
+                  </Link>
+                </h3>
                 {club.description && <p style={{ fontSize: 14, color: "#4A4335" }}>{club.description}</p>}
                 <p style={{ fontSize: 13, color: "#4A4335", marginTop: 12 }}>
                   {new Date(club.session_date).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}

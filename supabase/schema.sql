@@ -9,6 +9,7 @@ create table if not exists clubs (
   category text not null,              -- Books / Art History / Theatre / Film
   title text not null,                 -- specific topic, e.g. "Short stories that changed our minds"
   description text,
+  vocabulary text,                     -- words & materials shown on the session detail page
   session_date date not null,
   session_time text not null,          -- e.g. "19:00 GMT+3"
   price_amount integer not null,       -- in the smallest currency unit, e.g. cents
@@ -35,15 +36,23 @@ create index if not exists idx_registrations_club on registrations(club_id);
 create index if not exists idx_registrations_token on registrations(access_token);
 create index if not exists idx_registrations_stripe_session on registrations(stripe_session_id);
 
+-- One row per person who asked to hear about new clubs (footer signup)
+create table if not exists subscribers (
+  id uuid primary key default gen_random_uuid(),
+  email text unique not null,
+  created_at timestamptz default now()
+);
+
 -- Row Level Security: the browser only ever reads published club listings directly.
 -- Everything involving registrations or payment status goes through server-side
 -- API routes using the service role key, so we keep these tables closed to anon.
 alter table clubs enable row level security;
 alter table registrations enable row level security;
+alter table subscribers enable row level security;
 
 create policy "Public can read published clubs"
   on clubs for select
   using (is_published = true);
 
--- No policies created for registrations -> anon key has zero access.
+-- No policies created for registrations or subscribers -> anon key has zero access.
 -- All reads/writes happen via the Next.js API routes (service role key).
