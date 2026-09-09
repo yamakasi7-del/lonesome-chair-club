@@ -40,13 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
         <main>{children}</main>
 
-        <footer style={{ background: "var(--ink-deep)", color: "#B9C4B4", padding: "36px 0" }}>
+        <footer style={{ background: "var(--ink-deep)", color: "#B9C4B4", padding: "36px 0 26px" }}>
           <div className="wrap" style={{ fontSize: 13 }}>
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fit,minmax(260px,1fr))",
-                gap: 32,
+                gap: 28,
                 alignItems: "start",
               }}
             >
@@ -57,23 +57,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <p>A place we talk about art, films, books, and theatre. Held live on Google Meet.</p>
                 <a
                   href="#"
+                  className="social-link"
                   aria-label="Lonesome Chair Club on Instagram"
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 8,
-                    marginTop: 14,
-                    color: "#B9C4B4",
-                    textDecoration: "none",
-                  }}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 10, marginTop: 16 }}
                 >
                   <svg
-                    width="18"
-                    height="18"
+                    width="30"
+                    height="30"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.8"
+                    strokeWidth="1.6"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     aria-hidden="true"
@@ -88,27 +82,53 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               <NewsletterForm />
-
-              <nav aria-label="Legal">
-                <div style={{ color: "var(--cream)", marginBottom: 10, fontWeight: 700 }}>Legal</div>
-                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 7 }}>
-                  {[
-                    ["/legal/privacy-policy", "Privacy Policy"],
-                    ["/legal/cookie-policy", "Cookie Policy"],
-                    ["/legal/refund-policy", "Refund Policy"],
-                    ["/legal/terms-of-service", "Terms of Service"],
-                  ].map(([href, label]) => (
-                    <li key={href}>
-                      <Link href={href} style={{ textDecoration: "none" }}>
-                        {label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </nav>
             </div>
 
-            <p style={{ marginTop: 28 }}>© {new Date().getFullYear()} Lonesome Chair Club</p>
+            {/* Legal row and copyright share one line on desktop and stack on
+                narrow screens, so the footer keeps no empty column. */}
+            <div
+              style={{
+                marginTop: 26,
+                paddingTop: 18,
+                borderTop: "1px solid rgba(248,243,231,.12)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: "10px 24px",
+                flexWrap: "wrap",
+              }}
+            >
+              <nav
+                aria-label="Legal"
+                // Flex, because adjacent JSX elements carry no whitespace
+                // between them and so offer no inline wrap opportunity — the
+                // row would otherwise break inside a label instead.
+                style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "4px 9px" }}
+              >
+                {[
+                  ["/legal/privacy-policy", "Privacy Policy"],
+                  ["/legal/cookie-policy", "Cookie Policy"],
+                  ["/legal/refund-policy", "Refund Policy"],
+                  ["/legal/terms-of-service", "Terms of Service"],
+                ].map(([href, label], i, all) => (
+                  // Label + its trailing separator stay glued together, so a
+                  // wrap never splits "Refund Policy" or starts a line with a
+                  // stray middot.
+                  <span key={href} style={{ whiteSpace: "nowrap" }}>
+                    <Link href={href} className="footer-link">
+                      {label}
+                    </Link>
+                    {i < all.length - 1 && (
+                      <span aria-hidden="true" style={{ marginLeft: 9, opacity: 0.45 }}>
+                        ·
+                      </span>
+                    )}
+                  </span>
+                ))}
+              </nav>
+
+              <p>© {new Date().getFullYear()} Lonesome Chair Club</p>
+            </div>
           </div>
         </footer>
 
