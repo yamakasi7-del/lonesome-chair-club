@@ -84,3 +84,18 @@ a { color: inherit; }
   background: var(--paper-deep);
   color: var(--ink-deep);
 }
+
+/* Footer links. Inline styles can't express :hover, so these live here. */
+.social-link {
+  color: var(--sage);
+  text-decoration: none;
+  transition: color .15s ease;
+}
+.social-link:hover { color: var(--cream); }
+
+.footer-link {
+  color: #B9C4B4;
+  text-decoration: none;
+  transition: color .15s ease;
+}
+.footer-link:hover { color: var(--cream); }
