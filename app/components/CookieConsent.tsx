@@ -5,6 +5,9 @@ import { useEffect, useState } from "react";
 
 const STORAGE_KEY = "cookie-consent";
 
+// Values are "all" or "necessary". Earlier visitors stored "accepted" /
+// "declined"; any stored value counts as answered, so nobody is re-asked.
+
 export default function CookieConsent() {
   // Starts hidden and only appears after the effect confirms no stored choice.
   // Rendering it on the server would flash the banner at people who already
@@ -20,7 +23,7 @@ export default function CookieConsent() {
     }
   }, []);
 
-  function choose(value: "accepted" | "declined") {
+  function choose(value: "all" | "necessary") {
     try {
       window.localStorage.setItem(STORAGE_KEY, value);
     } catch {
@@ -69,19 +72,19 @@ export default function CookieConsent() {
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
           <button
             type="button"
-            onClick={() => choose("declined")}
+            onClick={() => choose("necessary")}
             className="btn btn-outline"
             style={{ borderColor: "#7E9AA8", color: "var(--cream)", padding: "9px 18px", fontSize: 13 }}
           >
-            Decline
+            Only necessary
           </button>
           <button
             type="button"
-            onClick={() => choose("accepted")}
+            onClick={() => choose("all")}
             className="btn btn-ochre"
             style={{ padding: "9px 18px", fontSize: 13 }}
           >
-            Accept
+            Accept all
           </button>
         </div>
       </div>

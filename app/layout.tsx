@@ -66,16 +66,27 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     height="30"
                     viewBox="0 0 24 24"
                     fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
+                    stroke="url(#instagram-gradient)"
+                    strokeWidth="1.8"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     aria-hidden="true"
                     focusable="false"
                   >
+                    {/* Instagram's brand gradient runs bottom-left to top-right:
+                        warm yellow through orange and magenta into violet-blue. */}
+                    <defs>
+                      <linearGradient id="instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor="#FEDA75" />
+                        <stop offset="25%" stopColor="#FA7E1E" />
+                        <stop offset="50%" stopColor="#D62976" />
+                        <stop offset="75%" stopColor="#962FBF" />
+                        <stop offset="100%" stopColor="#4F5BD5" />
+                      </linearGradient>
+                    </defs>
                     <rect x="2" y="2" width="20" height="20" rx="5" />
                     <circle cx="12" cy="12" r="4" />
-                    <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none" />
+                    <circle cx="17.5" cy="6.5" r="1.2" fill="url(#instagram-gradient)" stroke="none" />
                   </svg>
                   Instagram
                 </a>

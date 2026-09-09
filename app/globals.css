@@ -87,11 +87,12 @@ a { color: inherit; }
 
 /* Footer links. Inline styles can't express :hover, so these live here. */
 .social-link {
-  color: var(--sage);
+  color: var(--cream);
   text-decoration: none;
-  transition: color .15s ease;
+  opacity: .88;
+  transition: opacity .15s ease;
 }
-.social-link:hover { color: var(--cream); }
+.social-link:hover { opacity: 1; }
 
 .footer-link {
   color: #B9C4B4;
