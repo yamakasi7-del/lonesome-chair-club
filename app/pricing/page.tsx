@@ -1,31 +1,26 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import ContactLink from "../components/ContactLink";
+import BuyPassButton from "../components/BuyPassButton";
+import { PASS_CATALOG, PASS_SIZES, SINGLE_SESSION_AMOUNT, dollars } from "@/lib/passes";
 
 export const metadata: Metadata = {
   title: "Pricing — Lonesome Chair Club",
   description: "What a seat costs: single sessions, session passes, guided feedback, and private lessons.",
 };
 
-const SINGLE_SESSION = 20;
+// Rendered from the same catalog /api/pass-checkout charges from, so the page
+// cannot advertise one price while Stripe collects another.
+const SINGLE_SESSION = dollars(SINGLE_SESSION_AMOUNT);
 
-const PASSES = [
-  { sessions: 4, total: 72, each: 18 },
-  { sessions: 6, total: 102, each: 17 },
-  { sessions: 10, total: 160, each: 16 },
-];
+const PASSES = PASS_SIZES.map((size) => ({
+  sessions: size,
+  total: dollars(PASS_CATALOG[size].priceAmount),
+  each: dollars(PASS_CATALOG[size].priceAmount) / size,
+}));
 
 const bodyColor = "#3A4B44";
 
-// Passes have no checkout flow yet, so "Buy" opens Telegram with the pass
-// already named — the fastest real path to paying for one today. Point this at
-// a proper checkout route once passes can be bought on the site.
-function buyPassHref(sessions: number, total: number) {
-  const telegram = process.env.NEXT_PUBLIC_TELEGRAM_URL;
-  if (!telegram) return undefined;
-  const text = `Hi! I would like to buy the ${sessions}-session pass ($${total}).`;
-  return `${telegram}${telegram.includes("?") ? "&" : "?"}text=${encodeURIComponent(text)}`;
-}
 
 function Price({ children }: { children: React.ReactNode }) {
   return (
@@ -92,34 +87,19 @@ export default function PricingPage() {
                 <span className="tag" style={{ display: "inline-block", marginTop: 12 }}>
                   Save ${pass.sessions * SINGLE_SESSION - pass.total}
                 </span>
-                <a
-                  className="btn btn-ochre"
-                  href={buyPassHref(pass.sessions, pass.total)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ display: "block", textAlign: "center", marginTop: 14, padding: "9px 14px", fontSize: 13 }}
-                >
-                  Buy this pass
-                </a>
+                <BuyPassButton passSize={pass.sessions} />
               </div>
             ))}
           </div>
 
-          {/* Remove this note once passes can actually be bought on the site. */}
-          <p
-            style={{
-              marginTop: 22,
-              padding: "14px 16px",
-              borderLeft: "3px solid var(--ochre)",
-              background: "var(--cream)",
-              color: "#4A4335",
-              fontSize: 14.5,
-            }}
-          >
-            <strong>Passes can&apos;t be checked out on the site yet.</strong> &ldquo;Buy this pass&rdquo;
-            opens a message to us on Telegram with the pass already filled in, and we will arrange payment and
-            set it up by hand. You can also just <Link href="/clubs" style={{ textDecoration: "underline" }}>register for individual sessions</Link>{" "}
-            as they are announced, or <ContactLink /> with any question.
+          <p style={{ color: bodyColor, fontSize: 15, marginTop: 20 }}>
+            Passes are tied to your account, so you will be asked to log in first. Credits never expire mid-way
+            through a booking: when you register for a session you can spend one credit instead of paying, and
+            what is left shows on{" "}
+            <Link href="/profile" style={{ textDecoration: "underline" }}>
+              your profile
+            </Link>
+            . Any questions, <ContactLink />.
           </p>
         </div>
       </section>

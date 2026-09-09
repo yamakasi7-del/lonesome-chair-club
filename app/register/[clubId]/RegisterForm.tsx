@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
+import { createAuthClient } from "@/lib/supabaseAuthClient";
 
 type PaymentMethod = "stripe" | "paypal";
 
@@ -9,14 +10,66 @@ type PaymentMethod = "stripe" | "paypal";
 // keeps the SDK script from loading at all — see the note by the radios.
 const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
 
-export default function RegisterForm({ clubId, currency = "usd" }: { clubId: string; currency?: string }) {
+export default function RegisterForm({
+  clubId,
+  currency = "usd",
+  priceAmount,
+}: {
+  clubId: string;
+  currency?: string;
+  priceAmount?: number;
+}) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("stripe");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Credits the logged-in person can spend here. null while unknown, 0 when
+  // signed out or out of credits — either way the form behaves as before.
+  const [credits, setCredits] = useState<number | null>(null);
+  const [useCredit, setUseCredit] = useState(false);
+
   const paypalReady = Boolean(paypalClientId);
+
+  useEffect(() => {
+    let active = true;
+
+    (async () => {
+      try {
+        const supabase = createAuthClient();
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session) {
+          if (active) setCredits(0);
+          return;
+        }
+
+        // RLS limits this to the caller's own passes.
+        const { data } = await supabase.from("passes").select("credits_remaining").gt("credits_remaining", 0);
+        const total = (data ?? []).reduce((sum, p) => sum + (p.credits_remaining ?? 0), 0);
+        if (active) {
+          setCredits(total);
+          setUseCredit(total > 0);
+        }
+      } catch {
+        if (active) setCredits(0);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const hasCredits = (credits ?? 0) > 0;
+  const priceLabel =
+    typeof priceAmount === "number"
+      ? new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(
+          priceAmount / 100
+        )
+      : "the session fee";
 
   // Both payment paths start the same way: a paid:false row plus its token.
   async function createRegistration(): Promise<string> {
@@ -37,6 +90,20 @@ export default function RegisterForm({ clubId, currency = "usd" }: { clubId: str
 
     try {
       const registrationId = await createRegistration();
+
+      // Paying with a credit skips Stripe and PayPal entirely.
+      if (useCredit && hasCredits) {
+        const redeemRes = await fetch("/api/redeem-credit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ registrationId }),
+        });
+        const redeemData = await redeemRes.json();
+        if (!redeemRes.ok) throw new Error(redeemData.error || "Could not use your credit");
+
+        window.location.href = `/success?token=${redeemData.token}`;
+        return;
+      }
 
       const checkoutRes = await fetch("/api/checkout", {
         method: "POST",
@@ -91,7 +158,42 @@ export default function RegisterForm({ clubId, currency = "usd" }: { clubId: str
         />
       </div>
 
-      <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+      {hasCredits && (
+        <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+          <legend style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, padding: 0 }}>How to pay</legend>
+          <div style={{ display: "grid", gap: 8 }}>
+            <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="settle"
+                checked={useCredit}
+                onChange={() => {
+                  setUseCredit(true);
+                  setError(null);
+                }}
+              />
+              Use 1 credit from my pass ({credits} remaining)
+            </label>
+            <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="radio"
+                name="settle"
+                checked={!useCredit}
+                onChange={() => {
+                  setUseCredit(false);
+                  setError(null);
+                }}
+              />
+              Pay {priceLabel} for this session
+            </label>
+          </div>
+        </fieldset>
+      )}
+
+      <fieldset
+        style={{ border: "none", padding: 0, margin: 0 }}
+        hidden={useCredit && hasCredits}
+      >
         <legend style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, padding: 0 }}>Payment method</legend>
         <div style={{ display: "flex", gap: 18 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, cursor: "pointer" }}>
@@ -133,19 +235,25 @@ export default function RegisterForm({ clubId, currency = "usd" }: { clubId: str
         </p>
       )}
 
-      {method === "stripe" && (
+      {(useCredit && hasCredits) || method === "stripe" ? (
         <button type="submit" className="btn btn-ochre" disabled={loading} style={{ marginTop: 6 }}>
-          {loading ? "Redirecting to payment…" : "Continue to payment"}
+          {useCredit && hasCredits
+            ? loading
+              ? "Confirming your seat…"
+              : "Use 1 credit and book"
+            : loading
+              ? "Redirecting to payment…"
+              : "Continue to payment"}
         </button>
-      )}
+      ) : null}
 
-      {method === "paypal" && !paypalReady && (
+      {!useCredit && method === "paypal" && !paypalReady && (
         <p style={{ fontSize: 14, color: "#875F3B", marginTop: 6 }}>
           PayPal isn't set up yet — please choose Card (Stripe), or message us on Telegram below.
         </p>
       )}
 
-      {method === "paypal" && paypalReady && (
+      {!useCredit && method === "paypal" && paypalReady && (
         <div style={{ marginTop: 6 }}>
           <PayPalScriptProvider
             options={{ clientId: paypalClientId!, currency: currency.toUpperCase(), intent: "capture" }}

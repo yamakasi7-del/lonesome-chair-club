@@ -41,7 +41,7 @@ export default async function RegisterPage({
         </div>
 
         <div>
-          <RegisterForm clubId={club.id} currency={club.currency} />
+          <RegisterForm clubId={club.id} currency={club.currency} priceAmount={club.price_amount} />
         </div>
       </div>
     </section>
