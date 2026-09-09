@@ -8,7 +8,9 @@ export const metadata: Metadata = {
 
 // The cancellation window is a starting point for Anna to confirm, not a
 // figure anyone has settled on. Marked in the page so it can't ship unnoticed.
-const CANCELLATION_WINDOW = "24 hours";
+// The page already says "working days" for refund timing, so keep that wording.
+const CANCELLATION_WINDOW = "10 working days";
+const CANCELLATION_WINDOW_ADJ = "10-working-day";
 
 function PlaceholderNote({ children }: { children: React.ReactNode }) {
   return (
@@ -39,13 +41,14 @@ export default function RefundPolicyPage() {
         your payment in full.
       </P>
       <P>
-        Within {CANCELLATION_WINDOW} of the start time, seats are generally non-refundable. By that point the
-        group is settled and the materials are prepared, and the seat is unlikely to be filled by someone else.
+        Within {CANCELLATION_WINDOW} of the start time, seats are generally non-refundable. Sessions are capped
+        at six people and the group is planned around who has booked, so a seat given up late usually stays
+        empty.
       </P>
       <PlaceholderNote>
-        <strong>Placeholder — for Anna to confirm.</strong> The {CANCELLATION_WINDOW} window is a suggested
-        starting point, not a decision. Change it to whatever suits the club, and make sure this page matches
-        what you tell people when they book.
+        <strong>Placeholder — for Anna to confirm.</strong> The {CANCELLATION_WINDOW_ADJ} window is a
+        starting point, not a settled decision. Change it to whatever suits the club, and make sure this page
+        matches what you tell people when they book.
       </PlaceholderNote>
 
       <H2>If you miss a session</H2>
