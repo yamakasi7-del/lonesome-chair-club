@@ -6,28 +6,8 @@ export const metadata: Metadata = {
   description: "When a seat can be refunded, what happens if you miss a session, and how to ask for an exception.",
 };
 
-// The cancellation window is a starting point for Anna to confirm, not a
-// figure anyone has settled on. Marked in the page so it can't ship unnoticed.
-// The page already says "working days" for refund timing, so keep that wording.
-const CANCELLATION_WINDOW = "10 working days";
-const CANCELLATION_WINDOW_ADJ = "10-working-day";
-
-function PlaceholderNote({ children }: { children: React.ReactNode }) {
-  return (
-    <p
-      style={{
-        marginTop: 14,
-        padding: "12px 14px",
-        border: "1px dashed var(--ochre)",
-        borderRadius: 6,
-        color: "#875F3B",
-        fontSize: 14,
-      }}
-    >
-      {children}
-    </p>
-  );
-}
+// One constant drives every mention of the cancellation deadline on this page.
+const CANCELLATION_WINDOW = "24 hours";
 
 export default function RefundPolicyPage() {
   return (
@@ -41,16 +21,9 @@ export default function RefundPolicyPage() {
         your payment in full.
       </P>
       <P>
-        Within {CANCELLATION_WINDOW} of the start time, seats are generally non-refundable. Sessions are capped
-        at six people and the group is planned around who has booked, so a seat given up late usually stays
-        empty.
+        Within {CANCELLATION_WINDOW} of the start time, seats are generally non-refundable. By that point the
+        group is settled and the materials are prepared, and the seat is unlikely to be filled by someone else.
       </P>
-      <PlaceholderNote>
-        <strong>Placeholder — for Anna to confirm.</strong> The {CANCELLATION_WINDOW_ADJ} window is a
-        starting point, not a settled decision. Change it to whatever suits the club, and make sure this page
-        matches what you tell people when they book.
-      </PlaceholderNote>
-
       <H2>If you miss a session</H2>
       <P>
         Missed sessions are not automatically refunded. If you book a seat and do not come, the payment is not
