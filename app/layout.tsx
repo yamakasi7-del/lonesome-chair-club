@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import NewsletterForm from "./components/NewsletterForm";
 import CookieConsent from "./components/CookieConsent";
+import AuthNav from "./components/AuthNav";
 
 export const metadata: Metadata = {
   title: "Lonesome Chair Club — English Speaking Club",
@@ -51,6 +52,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/clubs" style={{ textDecoration: "none" }}>Clubs</a>
               <a href="/about" style={{ textDecoration: "none" }}>About</a>
               <a href="/pricing" style={{ textDecoration: "none" }}>Pricing</a>
+              <AuthNav />
               <a href="/clubs" className="btn btn-ochre" style={{ padding: "9px 18px" }}>Reserve a seat</a>
             </nav>
           </div>
