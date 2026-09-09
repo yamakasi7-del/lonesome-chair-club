@@ -1,6 +1,8 @@
 import "./globals.css";
+import Link from "next/link";
 import type { Metadata } from "next";
 import NewsletterForm from "./components/NewsletterForm";
+import CookieConsent from "./components/CookieConsent";
 
 export const metadata: Metadata = {
   title: "Lonesome Chair Club — English Speaking Club",
@@ -86,11 +88,31 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               <NewsletterForm />
+
+              <nav aria-label="Legal">
+                <div style={{ color: "var(--cream)", marginBottom: 10, fontWeight: 700 }}>Legal</div>
+                <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "grid", gap: 7 }}>
+                  {[
+                    ["/legal/privacy-policy", "Privacy Policy"],
+                    ["/legal/cookie-policy", "Cookie Policy"],
+                    ["/legal/refund-policy", "Refund Policy"],
+                    ["/legal/terms-of-service", "Terms of Service"],
+                  ].map(([href, label]) => (
+                    <li key={href}>
+                      <Link href={href} style={{ textDecoration: "none" }}>
+                        {label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </nav>
             </div>
 
             <p style={{ marginTop: 28 }}>© {new Date().getFullYear()} Lonesome Chair Club</p>
           </div>
         </footer>
+
+        <CookieConsent />
       </body>
     </html>
   );
