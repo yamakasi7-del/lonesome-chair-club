@@ -23,46 +23,15 @@ export function UL({ children }: { children: React.ReactNode }) {
   );
 }
 
-// The site has no contact form — Telegram is the contact channel used
-// everywhere else (registration form, clubs page), so legal pages point there
-// too. Swap this for a real contact page if one is ever added.
-export function ContactLink({ children = "message us on Telegram" }: { children?: React.ReactNode }) {
-  return (
-    <a
-      href={process.env.NEXT_PUBLIC_TELEGRAM_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      style={{ textDecoration: "underline" }}
-    >
-      {children}
-    </a>
-  );
-}
+// Lives in app/components now that pricing uses it too; re-exported here so
+// the legal pages can keep importing it from this module.
+export { default as ContactLink } from "../components/ContactLink";
 
 export function InternalLink({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Link href={href} style={{ textDecoration: "underline" }}>
       {children}
     </Link>
-  );
-}
-
-// Shown at the top of every legal page. These are good-practice templates,
-// not legal advice, and they say so where a reader will actually see it.
-export function TemplateNotice() {
-  return (
-    <p
-      style={{
-        marginTop: 26,
-        padding: "14px 16px",
-        borderLeft: "3px solid var(--ochre)",
-        background: "var(--cream)",
-        color: "#4A4335",
-        fontSize: 14.5,
-      }}
-    >
-      This page is a good-practice template and not legal advice. It has not been reviewed by a lawyer.
-    </p>
   );
 }
 
@@ -89,7 +58,6 @@ export default function LegalPage({
       <section style={{ padding: "56px 0 80px" }}>
         <div className="wrap" style={{ maxWidth: 640 }}>
           {intro && <p style={{ color: bodyColor, fontSize: 16 }}>{intro}</p>}
-          <TemplateNotice />
           {children}
         </div>
       </section>

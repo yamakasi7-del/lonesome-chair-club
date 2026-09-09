@@ -25,14 +25,32 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           <div
             className="wrap"
-            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 24px" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: "10px 16px",
+              padding: "16px 24px",
+            }}
           >
-            <a href="/" style={{ fontFamily: "var(--serif)", fontSize: 19, fontWeight: 700, color: "var(--ink)", textDecoration: "none" }}>
+            <a
+              href="/"
+              style={{
+                fontFamily: "var(--serif)",
+                fontSize: 19,
+                fontWeight: 700,
+                color: "var(--ink)",
+                textDecoration: "none",
+                whiteSpace: "nowrap",
+              }}
+            >
               Lonesome <em style={{ color: "var(--ochre-deep)" }}>Chair</em> Club
             </a>
-            <nav style={{ display: "flex", alignItems: "center", gap: 20, fontSize: 14 }}>
+            <nav style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "8px 18px", fontSize: 14 }}>
               <a href="/clubs" style={{ textDecoration: "none" }}>Clubs</a>
               <a href="/about" style={{ textDecoration: "none" }}>About</a>
+              <a href="/pricing" style={{ textDecoration: "none" }}>Pricing</a>
               <a href="/clubs" className="btn btn-ochre" style={{ padding: "9px 18px" }}>Reserve a seat</a>
             </nav>
           </div>
