@@ -19,8 +19,8 @@ export default function CookiePolicyPage() {
       </P>
       <UL>
         <li>
-          <strong>cookie-consent</strong> — records whether you pressed Accept or Decline, so the banner does
-          not appear on every page. It is kept in your browser's local storage rather than in a cookie, it
+          <strong>cookie-consent</strong> — records whether you pressed "Accept all" or "Only necessary", so
+          the banner does not appear on every page. It is kept in your browser's local storage rather than in a cookie, it
           stays on your device, and it is never sent to us.
         </li>
       </UL>
@@ -44,8 +44,8 @@ export default function CookiePolicyPage() {
         </li>
       </UL>
       <P>
-        These are necessary for a payment to work. Declining the banner on this site does not remove them,
-        because they only appear once you choose to pay. Their use is governed by Stripe's and PayPal's own
+        These are necessary for a payment to work. Choosing "Only necessary" on this site does not remove
+        them, because they only appear once you choose to pay. Their use is governed by Stripe's and PayPal's own
         cookie and privacy policies.
       </P>
 
@@ -56,10 +56,14 @@ export default function CookiePolicyPage() {
         control.
       </P>
 
-      <H2>What declining does</H2>
+      <H2>What your choice does</H2>
       <P>
-        Because we set no tracking cookies, declining does not switch anything off — it simply records your
-        answer so we stop asking. Registration, payment, and the newsletter all continue to work either way.
+        We do not currently set any optional cookies, so today the two buttons come to the same thing: your
+        answer is recorded and we stop asking. Registration, payment, and the newsletter all work either way.
+      </P>
+      <P>
+        The choice is offered so that it already means something the moment anything optional is added. If we
+        ever introduce analytics, "Only necessary" will keep it switched off for you.
       </P>
 
       <H2>Changes</H2>
