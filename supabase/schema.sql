@@ -29,12 +29,14 @@ create table if not exists registrations (
   paid boolean not null default false,
   stripe_session_id text,
   access_token uuid not null default gen_random_uuid(),  -- capability token used on the success page
+  user_id uuid references auth.users(id),                -- set when the person was logged in; null for guest bookings
   created_at timestamptz default now()
 );
 
 create index if not exists idx_registrations_club on registrations(club_id);
 create index if not exists idx_registrations_token on registrations(access_token);
 create index if not exists idx_registrations_stripe_session on registrations(stripe_session_id);
+create index if not exists idx_registrations_user on registrations(user_id);
 
 -- One row per person who asked to hear about new clubs (footer signup)
 create table if not exists subscribers (
@@ -54,5 +56,11 @@ create policy "Public can read published clubs"
   on clubs for select
   using (is_published = true);
 
--- No policies created for registrations or subscribers -> anon key has zero access.
+create policy "Users can read their own registrations"
+  on registrations for select
+  to authenticated
+  using (user_id = (select auth.uid()));
+
+-- Apart from that one read path, no policies for registrations or subscribers
+-- -> the anon key has zero access.
 -- All reads/writes happen via the Next.js API routes (service role key).
