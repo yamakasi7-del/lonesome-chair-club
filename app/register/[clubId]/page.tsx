@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { notFound } from "next/navigation";
+import { isPayPalConfigured } from "@/lib/paypalStandard";
 import RegisterForm from "./RegisterForm";
 
 async function getClub(clubId: string) {
@@ -41,7 +42,15 @@ export default async function RegisterPage({
         </div>
 
         <div>
-          <RegisterForm clubId={club.id} currency={club.currency} priceAmount={club.price_amount} />
+          {/* Read here rather than in the form: PAYPAL_RECEIVER_EMAIL is
+              server-only, so the page passes down a yes/no instead of the
+              address itself. */}
+          <RegisterForm
+            clubId={club.id}
+            currency={club.currency}
+            priceAmount={club.price_amount}
+            paypalReady={isPayPalConfigured()}
+          />
         </div>
       </div>
     </section>

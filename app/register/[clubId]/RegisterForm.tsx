@@ -1,27 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PayPalButtons, PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { createAuthClient } from "@/lib/supabaseAuthClient";
-
-type PaymentMethod = "stripe" | "paypal";
-
-// Inlined at build time. Empty when PayPal isn't set up yet, which is what
-// keeps the SDK script from loading at all — see the note by the radios.
-const paypalClientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID;
+import { submitToPayPal } from "@/lib/paypalRedirect";
 
 export default function RegisterForm({
   clubId,
   currency = "usd",
   priceAmount,
+  paypalReady = false,
 }: {
   clubId: string;
   currency?: string;
   priceAmount?: number;
+  // Decided on the server, because the receiving PayPal account address is not
+  // a public value and must not be inlined into the browser bundle.
+  paypalReady?: boolean;
 }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("stripe");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -29,8 +26,6 @@ export default function RegisterForm({
   // signed out or out of credits — either way the form behaves as before.
   const [credits, setCredits] = useState<number | null>(null);
   const [useCredit, setUseCredit] = useState(false);
-
-  const paypalReady = Boolean(paypalClientId);
 
   useEffect(() => {
     let active = true;
@@ -46,8 +41,15 @@ export default function RegisterForm({
           return;
         }
 
-        // RLS limits this to the caller's own passes.
-        const { data } = await supabase.from("passes").select("credits_remaining").gt("credits_remaining", 0);
+        // RLS limits this to the caller's own passes. A refunded pass keeps its
+        // remaining credits on record but cannot be spent, so it is filtered
+        // out here too — redeem_pass_credit() enforces the same rule in the
+        // database, which is what actually guarantees it.
+        const { data } = await supabase
+          .from("passes")
+          .select("credits_remaining")
+          .eq("status", "active")
+          .gt("credits_remaining", 0);
         const total = (data ?? []).reduce((sum, p) => sum + (p.credits_remaining ?? 0), 0);
         if (active) {
           setCredits(total);
@@ -64,6 +66,7 @@ export default function RegisterForm({
   }, []);
 
   const hasCredits = (credits ?? 0) > 0;
+  const payingWithCredit = useCredit && hasCredits;
   const priceLabel =
     typeof priceAmount === "number"
       ? new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(
@@ -91,8 +94,8 @@ export default function RegisterForm({
     try {
       const registrationId = await createRegistration();
 
-      // Paying with a credit skips Stripe and PayPal entirely.
-      if (useCredit && hasCredits) {
+      // Paying with a credit never leaves the site.
+      if (payingWithCredit) {
         const redeemRes = await fetch("/api/redeem-credit", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,7 +108,7 @@ export default function RegisterForm({
         return;
       }
 
-      const checkoutRes = await fetch("/api/checkout", {
+      const checkoutRes = await fetch("/api/checkout/paypal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ registrationId }),
@@ -113,20 +116,16 @@ export default function RegisterForm({
       const checkoutData = await checkoutRes.json();
       if (!checkoutRes.ok) throw new Error(checkoutData.error || "Could not start checkout");
 
-      window.location.href = checkoutData.url;
+      // Leaves the page. The seat is not confirmed until PayPal notifies our
+      // server over IPN, which is what /success waits for.
+      submitToPayPal(checkoutData.action, checkoutData.fields);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
       setLoading(false);
     }
   }
 
-  // The PayPal buttons sit outside the <form>, so the browser's own "required"
-  // check never runs for them — validate by hand before opening an order.
-  function assertDetails() {
-    if (!name.trim() || !email.trim()) {
-      throw new Error("Please fill in your name and email first");
-    }
-  }
+  const canSubmit = payingWithCredit || paypalReady;
 
   return (
     <form onSubmit={handleSubmit} style={{ display: "grid", gap: 14, maxWidth: 420 }}>
@@ -190,41 +189,6 @@ export default function RegisterForm({
         </fieldset>
       )}
 
-      <fieldset
-        style={{ border: "none", padding: 0, margin: 0 }}
-        hidden={useCredit && hasCredits}
-      >
-        <legend style={{ fontSize: 13, fontWeight: 700, marginBottom: 6, padding: 0 }}>Payment method</legend>
-        <div style={{ display: "flex", gap: 18 }}>
-          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="method"
-              value="stripe"
-              checked={method === "stripe"}
-              onChange={() => {
-                setMethod("stripe");
-                setError(null);
-              }}
-            />
-            Card (Stripe)
-          </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 14, cursor: "pointer" }}>
-            <input
-              type="radio"
-              name="method"
-              value="paypal"
-              checked={method === "paypal"}
-              onChange={() => {
-                setMethod("paypal");
-                setError(null);
-              }}
-            />
-            PayPal
-          </label>
-        </div>
-      </fieldset>
-
       {error && (
         <p style={{ color: "#993C1D", fontSize: 14 }}>
           {error} — if this keeps happening, message us on{" "}
@@ -235,9 +199,9 @@ export default function RegisterForm({
         </p>
       )}
 
-      {(useCredit && hasCredits) || method === "stripe" ? (
+      {canSubmit ? (
         <button type="submit" className="btn btn-ochre" disabled={loading} style={{ marginTop: 6 }}>
-          {useCredit && hasCredits
+          {payingWithCredit
             ? loading
               ? "Confirming your seat…"
               : "Use 1 credit and book"
@@ -245,61 +209,20 @@ export default function RegisterForm({
               ? "Redirecting to payment…"
               : "Continue to payment"}
         </button>
-      ) : null}
-
-      {!useCredit && method === "paypal" && !paypalReady && (
+      ) : (
         <p style={{ fontSize: 14, color: "#875F3B", marginTop: 6 }}>
-          PayPal isn't set up yet — please choose Card (Stripe), or message us on Telegram below.
+          Payment isn't available just now. Message us on{" "}
+          <a href={process.env.NEXT_PUBLIC_TELEGRAM_URL} target="_blank" rel="noopener noreferrer" style={{ textDecoration: "underline" }}>
+            Telegram
+          </a>{" "}
+          and we'll reserve your seat for you.
         </p>
       )}
 
-      {!useCredit && method === "paypal" && paypalReady && (
-        <div style={{ marginTop: 6 }}>
-          <PayPalScriptProvider
-            options={{ clientId: paypalClientId!, currency: currency.toUpperCase(), intent: "capture" }}
-          >
-            <PayPalButtons
-              style={{ layout: "vertical", color: "gold", shape: "rect", label: "paypal" }}
-              disabled={loading}
-              createOrder={async () => {
-                setError(null);
-                assertDetails();
-
-                const registrationId = await createRegistration();
-
-                const orderRes = await fetch("/api/paypal-order", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ registrationId }),
-                });
-                const orderData = await orderRes.json();
-                if (!orderRes.ok) throw new Error(orderData.error || "Could not start PayPal checkout");
-
-                return orderData.orderId;
-              }}
-              onApprove={async (data) => {
-                setLoading(true);
-
-                const captureRes = await fetch("/api/paypal-capture", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ orderId: data.orderID }),
-                });
-                const captureData = await captureRes.json();
-                if (!captureRes.ok) {
-                  setLoading(false);
-                  throw new Error(captureData.error || "Could not confirm your PayPal payment");
-                }
-
-                window.location.href = `/success?token=${captureData.token}`;
-              }}
-              onError={(err: any) => {
-                setError(err?.message || "PayPal couldn't complete the payment. Please try again.");
-                setLoading(false);
-              }}
-            />
-          </PayPalScriptProvider>
-        </div>
+      {!payingWithCredit && paypalReady && (
+        <p style={{ fontSize: 12.5, color: "#7A7666" }}>
+          You'll be taken to PayPal to pay, and brought straight back here afterwards.
+        </p>
       )}
 
       <p style={{ fontSize: 12.5, color: "#7A7666" }}>
