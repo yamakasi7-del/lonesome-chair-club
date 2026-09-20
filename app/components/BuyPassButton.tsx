@@ -1,9 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import { submitToPayPal } from "@/lib/paypalRedirect";
 
-// Sends the buyer to Stripe Checkout for a pass. Passes belong to an account,
-// so a signed-out visitor is sent to log in first rather than shown an error.
+// Sends the buyer to PayPal for a pass. Passes belong to an account, so a
+// signed-out visitor is sent to log in first rather than shown an error.
+//
+// The credits do not exist yet at this point: they are created only once PayPal
+// confirms the payment over IPN, so abandoning the checkout leaves nothing
+// behind.
 export default function BuyPassButton({ passSize }: { passSize: number }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -13,7 +18,7 @@ export default function BuyPassButton({ passSize }: { passSize: number }) {
     setError(null);
 
     try {
-      const res = await fetch("/api/pass-checkout", {
+      const res = await fetch("/api/pass-checkout/paypal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ passSize }),
@@ -27,7 +32,8 @@ export default function BuyPassButton({ passSize }: { passSize: number }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Could not start checkout");
 
-      window.location.href = data.url;
+      // Leaves the page for PayPal.
+      submitToPayPal(data.action, data.fields);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
       setLoading(false);

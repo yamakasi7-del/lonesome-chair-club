@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabaseAdmin";
-import { decodeCustom, getIpnVerifyUrl, getPayPalMode, getReceiverEmail } from "@/lib/paypalStandard";
+import {
+  decodeCustom,
+  getIpnVerifyUrl,
+  getPayPalMode,
+  getReceiverEmail,
+  type PayPalMode,
+} from "@/lib/paypalStandard";
 import {
   buildVerificationBody,
   decideIpnOutcome,
@@ -84,6 +90,222 @@ async function loadRegistrationTarget(id: string): Promise<IpnTarget | null> {
         ? null
         : parseAmountToCents(String(data.paid_amount)),
   };
+}
+
+async function loadPassOrderTarget(id: string): Promise<IpnTarget | null> {
+  const { data, error } = await supabaseAdmin
+    .from("pass_orders")
+    .select("id, status, paypal_txn_id, paid_amount, price_amount, currency")
+    .eq("id", id)
+    .single();
+
+  if (error || !data) return null;
+
+  return {
+    kind: "pass_order",
+    id: data.id,
+    expectedAmountCents: data.price_amount,
+    currency: data.currency,
+    status: data.status,
+    paypalTxnId: data.paypal_txn_id,
+    paidAmountCents:
+      data.paid_amount === null || data.paid_amount === undefined
+        ? null
+        : parseAmountToCents(String(data.paid_amount)),
+  };
+}
+
+type FinishFn = (patch: Record<string, unknown>, status?: number) => Promise<NextResponse>;
+
+/**
+ * Apply an IPN to a pass purchase.
+ *
+ * The same decision function as bookings, so a pass gets exactly the same
+ * protection: the amount is checked in integer cents against the price written
+ * into pass_orders at checkout, the receiver must match, and a resent message
+ * is a no-op.
+ *
+ * Granting is deliberately ordered pass-first, order-second. If the process
+ * dies between the two, the buyer has the credits they paid for and a retried
+ * IPN tidies the order up. The other way round would leave someone who has
+ * paid with no credits, which is the worse failure.
+ */
+async function handlePassOrder(
+  orderId: string,
+  fields: IpnFields,
+  ctx: { mode: PayPalMode; receiverEmail: string },
+  base: Record<string, unknown>,
+  finish: FinishFn
+): Promise<NextResponse> {
+  const target = await loadPassOrderTarget(orderId);
+  if (!target) {
+    return finish({ ...base, processing_result: "no_target", notes: "custom pointed at a pass order that does not exist." });
+  }
+
+  const outcome = decideIpnOutcome(fields, { ...ctx, target });
+  const log = { ...base, pass_order_id: target.id };
+
+  if (outcome.kind === "paid") {
+    // 1. The credits. Unique pass_order_id means a resent message cannot grant
+    //    a second pass, so 23505 here means "already granted" and is success.
+    const { data: order } = await supabaseAdmin
+      .from("pass_orders")
+      .select("user_id, pass_size, price_amount")
+      .eq("id", target.id)
+      .single();
+
+    if (!order) {
+      return finish({ ...log, processing_result: "db_error", notes: "Could not read the pass order back." }, 500);
+    }
+
+    const { error: passError } = await supabaseAdmin.from("passes").insert({
+      user_id: order.user_id,
+      pass_size: order.pass_size,
+      credits_remaining: order.pass_size,
+      price_paid_amount: order.price_amount,
+      pass_order_id: target.id,
+    });
+
+    if (passError && passError.code !== "23505") {
+      console.error("IPN: failed to grant a pass", { orderId: target.id, code: passError.code });
+      return finish({ ...log, processing_result: "db_error", notes: "Could not create the pass." }, 500);
+    }
+
+    // 2. The order. Conditional, so racing copies cannot both claim it.
+    const { error: orderError } = await supabaseAdmin
+      .from("pass_orders")
+      .update({
+        status: "paid",
+        paypal_txn_id: outcome.txnId,
+        paid_amount: outcome.amountCents / 100,
+        paid_currency: outcome.currency,
+        payer_email: outcome.payerEmail,
+        paid_at: new Date().toISOString(),
+      })
+      .eq("id", target.id)
+      .in("status", ["pending", "payment_review"]);
+
+    if (orderError && orderError.code !== "23505") {
+      console.error("IPN: pass granted but the order could not be marked paid", {
+        orderId: target.id,
+        code: orderError.code,
+      });
+      return finish(
+        { ...log, processing_result: "db_error", notes: "Pass granted; the order could not be marked paid." },
+        500
+      );
+    }
+
+    return finish({
+      ...log,
+      processing_result: passError?.code === "23505" ? "duplicate" : "paid",
+      notes: passError?.code === "23505" ? "Pass already granted for this order." : outcome.note,
+    });
+  }
+
+  if (outcome.kind === "refunded") {
+    // Agreed behaviour: the pass stops being spendable and is flagged, but its
+    // remaining credits are left on record rather than deleted, and sessions
+    // already booked with a credit are untouched.
+    const { error: orderError } = await supabaseAdmin
+      .from("pass_orders")
+      .update({ status: "refunded" })
+      .eq("id", target.id)
+      .eq("status", "paid")
+      .eq("paypal_txn_id", outcome.parentTxnId);
+
+    const { error: passError } = await supabaseAdmin
+      .from("passes")
+      .update({
+        status: "refunded",
+        refunded_at: new Date().toISOString(),
+        needs_review: true,
+        review_note:
+          "Pass refunded via PayPal. Remaining credits are blocked but not deleted; " +
+          "sessions already booked with a credit are unaffected. Settle by hand.",
+      })
+      .eq("pass_order_id", target.id)
+      .eq("status", "active");
+
+    if (orderError || passError) {
+      console.error("IPN: failed to record a pass refund", { orderId: target.id });
+      return finish({ ...log, processing_result: "db_error", notes: "Could not apply the pass refund." }, 500);
+    }
+
+    return finish({
+      ...log,
+      processing_result: "refunded",
+      notes: `NEEDS REVIEW: ${outcome.note} Remaining credits blocked, not deleted.`,
+    });
+  }
+
+  if (outcome.kind === "restored") {
+    const { error: orderError } = await supabaseAdmin
+      .from("pass_orders")
+      .update({ status: "paid" })
+      .eq("id", target.id)
+      .eq("status", "refunded")
+      .eq("paypal_txn_id", outcome.parentTxnId);
+
+    const { error: passError } = await supabaseAdmin
+      .from("passes")
+      .update({
+        status: "active",
+        refunded_at: null,
+        needs_review: true,
+        review_note: "Refund reversed in our favour; credits unblocked. Worth checking the balance is right.",
+      })
+      .eq("pass_order_id", target.id)
+      .eq("status", "refunded");
+
+    if (orderError || passError) {
+      console.error("IPN: failed to restore a pass", { orderId: target.id });
+      return finish({ ...log, processing_result: "db_error", notes: "Could not restore the pass." }, 500);
+    }
+
+    return finish({ ...log, processing_result: "restored", notes: `NEEDS REVIEW: ${outcome.note}` });
+  }
+
+  if (outcome.kind === "reverted") {
+    const { error } = await supabaseAdmin
+      .from("pass_orders")
+      .update({ status: "pending" })
+      .eq("id", target.id)
+      .eq("status", "payment_review")
+      .is("paypal_txn_id", null);
+
+    if (error) {
+      return finish({ ...log, processing_result: "db_error", notes: "Could not revert the pass order." }, 500);
+    }
+    return finish({
+      ...log,
+      processing_result: `reverted_to_pending:${outcome.reason}`,
+      notes: outcome.note,
+    });
+  }
+
+  if (outcome.kind === "review") {
+    const { error } = await supabaseAdmin
+      .from("pass_orders")
+      .update({ status: "payment_review" })
+      .eq("id", target.id)
+      .in("status", ["pending", "payment_review"]);
+
+    if (error) {
+      return finish({ ...log, processing_result: "db_error", notes: "Could not flag the pass order." }, 500);
+    }
+    return finish({
+      ...log,
+      processing_result: `review:${outcome.reason}`,
+      notes: outcome.needsReview ? `NEEDS REVIEW: ${outcome.note}` : outcome.note,
+    });
+  }
+
+  return finish({
+    ...log,
+    processing_result: `ignored:${outcome.reason}`,
+    notes: outcome.needsReview ? `NEEDS REVIEW: ${outcome.note}` : outcome.note,
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -190,15 +412,13 @@ export async function POST(req: NextRequest) {
   }
 
   if (ref.kind === "pass_order") {
-    // Wired up with the pass checkout route in the next commit. No pass_orders
-    // rows can exist yet, so this is unreachable rather than broken.
-    return finish({
-      verification_result: "VERIFIED",
-      txn_id: txnId,
-      payment_status: paymentStatus,
-      processing_result: "pass_order_not_handled_yet",
-      notes: "Pass purchases are handled from the next commit onwards.",
-    });
+    return handlePassOrder(
+      ref.id,
+      fields,
+      { mode, receiverEmail },
+      { verification_result: "VERIFIED", txn_id: txnId, payment_status: paymentStatus },
+      finish
+    );
   }
 
   const target = await loadRegistrationTarget(ref.id);
