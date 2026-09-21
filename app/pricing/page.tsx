@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 // Rendered from the same catalog /api/pass-checkout charges from, so the page
-// cannot advertise one price while Stripe collects another.
+// cannot advertise one price while PayPal collects another.
 const SINGLE_SESSION = dollars(SINGLE_SESSION_AMOUNT);
 
 const PASSES = PASS_SIZES.map((size) => ({

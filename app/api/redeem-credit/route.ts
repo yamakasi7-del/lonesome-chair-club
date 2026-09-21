@@ -4,7 +4,7 @@ import { createServerAuthClient } from "@/lib/supabaseServerAuth";
 
 // POST { registrationId }
 // Pays for a registration with one credit from the caller's pass, instead of
-// sending them to Stripe or PayPal. The decrement and the "paid" flag happen
+// sending them to PayPal. The decrement and the "paid" flag happen
 // inside one guarded transaction in redeem_pass_credit(), so a credit can never
 // be spent twice and never goes negative.
 export async function POST(req: NextRequest) {

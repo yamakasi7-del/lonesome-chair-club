@@ -20,7 +20,7 @@ import {
 //
 // No pass is created here. Credits only exist once the IPN confirms the money
 // arrived, so an abandoned checkout leaves nothing behind -- the same property
-// the Stripe flow had, where the webhook created the pass.
+// the previous flow had, where a webhook created the pass.
 export async function POST(req: NextRequest) {
   try {
     const receiverEmail = getReceiverEmail();
