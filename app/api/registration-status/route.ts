@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
 
   const { data: reg, error } = await supabaseAdmin
     .from("registrations")
-    .select("paid, name, clubs ( title, category, session_date, session_time, meet_link )")
+    .select("paid, payment_status, name, clubs ( title, category, session_date, session_time, meet_link )")
     .eq("access_token", token)
     .single();
 
@@ -24,6 +24,11 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     paid: reg.paid,
+    // The success page needs to tell "still waiting for PayPal" apart from
+    // "we are checking this by hand" and "this was refunded", which a boolean
+    // cannot express. paid is kept alongside it: it is the single thing that
+    // gates the Meet link, and it stays derived from payment_status.
+    paymentStatus: reg.payment_status,
     name: reg.name,
     club: {
       title: club.title,
