@@ -5,6 +5,7 @@ import {
   encodeCustom,
   getCheckoutUrl,
   getReceiverEmail,
+  payPalConfigError,
 } from "@/lib/paypalStandard";
 
 // POST { registrationId }
@@ -19,8 +20,10 @@ import {
 // ever marked paid.
 export async function POST(req: NextRequest) {
   try {
+    const configError = payPalConfigError();
     const receiverEmail = getReceiverEmail();
-    if (!receiverEmail) {
+    if (configError || !receiverEmail) {
+      console.error(`PayPal checkout refused: ${configError ?? "no receiver email"}`);
       // Mirrors how lib/paypal.ts answered when it had no credentials: a clean
       // 503 the form can explain, rather than an exception at import time.
       return NextResponse.json({ error: "PayPal is not configured" }, { status: 503 });

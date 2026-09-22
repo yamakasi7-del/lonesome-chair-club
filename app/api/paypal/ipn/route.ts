@@ -5,6 +5,7 @@ import {
   getIpnVerifyUrl,
   getPayPalMode,
   getReceiverEmail,
+  payPalConfigError,
   type PayPalMode,
 } from "@/lib/paypalStandard";
 import {
@@ -390,13 +391,14 @@ export async function POST(req: NextRequest) {
   }
 
   // --- From here the message is genuinely PayPal's ------------------------
-  if (!receiverEmail) {
+  const configError = payPalConfigError();
+  if (configError || !receiverEmail) {
     return finish({
       verification_result: "VERIFIED",
       txn_id: txnId,
       payment_status: paymentStatus,
       processing_result: "not_configured",
-      notes: "PAYPAL_RECEIVER_EMAIL is not set, so the receiving account cannot be checked.",
+      notes: `${configError ?? "PAYPAL_RECEIVER_EMAIL is not set"}, so this payment cannot be checked. Nothing was changed.`,
     });
   }
 

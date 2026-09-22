@@ -7,6 +7,7 @@ import {
   encodeCustom,
   getCheckoutUrl,
   getReceiverEmail,
+  payPalConfigError,
 } from "@/lib/paypalStandard";
 
 // POST { passSize }
@@ -23,8 +24,10 @@ import {
 // the previous flow had, where a webhook created the pass.
 export async function POST(req: NextRequest) {
   try {
+    const configError = payPalConfigError();
     const receiverEmail = getReceiverEmail();
-    if (!receiverEmail) {
+    if (configError || !receiverEmail) {
+      console.error(`PayPal checkout refused: ${configError ?? "no receiver email"}`);
       return NextResponse.json({ error: "PayPal is not configured" }, { status: 503 });
     }
 

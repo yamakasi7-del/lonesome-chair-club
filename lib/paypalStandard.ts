@@ -42,8 +42,38 @@ export function getReceiverEmail(): string | null {
   return email ? email : null;
 }
 
+// True only on the real production deployment. Vercel sets VERCEL_ENV to
+// "production", "preview" or "development"; NODE_ENV is "production" for
+// preview builds too, so it cannot be used to tell them apart.
+export function isProductionDeployment(): boolean {
+  return process.env.VERCEL_ENV === "production";
+}
+
+/**
+ * Why the PayPal configuration must not be used, or null if it is fine.
+ *
+ * getPayPalMode() falls back to sandbox when PAYPAL_MODE is unset, which is the
+ * right direction to fail in -- a typo can never take real money. But on the
+ * production deployment that fallback is its own hazard: the site would quietly
+ * send buyers to sandbox.paypal.com, and verify live notifications against the
+ * sandbox endpoint, which answers INVALID. Nothing would be charged and nothing
+ * would be confirmed, and it would look like a mysterious outage rather than a
+ * missing environment variable.
+ *
+ * So production insists on being told explicitly.
+ */
+export function payPalConfigError(): string | null {
+  if (!getReceiverEmail()) {
+    return "PAYPAL_RECEIVER_EMAIL is not set";
+  }
+  if (isProductionDeployment() && getPayPalMode() !== "live") {
+    return 'PAYPAL_MODE must be set to "live" on the production deployment';
+  }
+  return null;
+}
+
 export function isPayPalConfigured(): boolean {
-  return getReceiverEmail() !== null;
+  return payPalConfigError() === null;
 }
 
 // Prices are stored as integer cents. PayPal wants a decimal string, and this
