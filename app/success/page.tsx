@@ -1,6 +1,7 @@
 import StatusPanel from "./StatusPanel";
 
-export default function SuccessPage({ searchParams }: { searchParams: { token?: string } }) {
+export default async function SuccessPage(props: { searchParams: Promise<{ token?: string }> }) {
+  const searchParams = await props.searchParams;
   const token = searchParams.token;
 
   return (

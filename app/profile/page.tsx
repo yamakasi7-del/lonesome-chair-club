@@ -16,7 +16,7 @@ type Club = {
 };
 
 export default async function ProfilePage() {
-  const supabase = createServerAuthClient();
+  const supabase = await createServerAuthClient();
 
   // getUser() validates the token with Supabase rather than trusting the cookie.
   const {

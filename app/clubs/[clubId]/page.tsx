@@ -20,7 +20,8 @@ function formatPrice(amount: number, currency: string) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.toUpperCase() }).format(amount / 100);
 }
 
-export default async function ClubDetailPage({ params }: { params: { clubId: string } }) {
+export default async function ClubDetailPage(props: { params: Promise<{ clubId: string }> }) {
+  const params = await props.params;
   const club = await getClub(params.clubId);
   if (!club) notFound();
 

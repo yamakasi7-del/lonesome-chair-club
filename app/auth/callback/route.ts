@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(errorDescription)}`);
   }
 
-  const supabase = createServerAuthClient();
+  const supabase = await createServerAuthClient();
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code);

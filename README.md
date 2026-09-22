@@ -76,6 +76,8 @@ git push -u origin main
 
 ## Local development
 
+Needs **Node 20 or newer** (Next.js 15 dropped support for older versions).
+
 ```bash
 npm install
 cp .env.example .env.local   # fill in your real keys

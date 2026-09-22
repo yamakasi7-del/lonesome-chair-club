@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     // re-validates the token with Supabase rather than trusting the cookie.
     const {
       data: { user },
-    } = await createServerAuthClient().auth.getUser();
+    } = await (await createServerAuthClient()).auth.getUser();
 
     if (!user) {
       return NextResponse.json({ error: "Please log in to buy a pass" }, { status: 401 });

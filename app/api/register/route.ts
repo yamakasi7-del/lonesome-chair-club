@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     // means this is a guest booking.
     let userId: string | null = null;
     try {
-      const { data: userData } = await createServerAuthClient().auth.getUser();
+      const { data: userData } = await (await createServerAuthClient()).auth.getUser();
       userId = userData.user?.id ?? null;
     } catch {
       userId = null;

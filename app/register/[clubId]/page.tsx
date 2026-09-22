@@ -12,13 +12,14 @@ async function getClub(clubId: string) {
   return data;
 }
 
-export default async function RegisterPage({
-  params,
-  searchParams,
-}: {
-  params: { clubId: string };
-  searchParams: { canceled?: string };
-}) {
+export default async function RegisterPage(
+  props: {
+    params: Promise<{ clubId: string }>;
+    searchParams: Promise<{ canceled?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const club = await getClub(params.clubId);
   if (!club) notFound();
 
