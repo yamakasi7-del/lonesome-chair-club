@@ -1,4 +1,4 @@
--- NOT YET APPLIED. Run this in Supabase: SQL Editor -> New query -> paste -> Run.
+-- APPLIED 2026-09-24 to production.
 --
 -- Part 6: move payment from Stripe (and the short-lived PayPal Orders API) to
 -- PayPal Payments Standard, confirmed server-side by Instant Payment
@@ -8,12 +8,20 @@
 -- The whole file runs in one transaction, and every step is written so that a
 -- second run is a no-op. If any statement fails, nothing is applied.
 --
--- Read before running: this replaces registrations.paid with a generated
--- column. Any code that WRITES paid (the Stripe webhook, the PayPal capture
--- route) stops working the moment this is applied. Those routes already cannot
--- run in production — no Stripe or PayPal keys are set in Vercel — and
--- redeem_pass_credit(), the one live writer, is replaced at the bottom of this
--- file in the same transaction.
+-- This replaced registrations.paid with a generated column, so any code that
+-- WRITES paid stops working. The two writers were the Stripe webhook and the
+-- PayPal capture route, both of which already could not run — no Stripe or
+-- PayPal keys were ever set in Vercel — and redeem_pass_credit(), the one live
+-- writer, is replaced at the bottom of this file in the same transaction.
+--
+-- Verified after applying, against production:
+--   * paid rejects writes with 428C9 "column paid can only be updated to
+--     DEFAULT", i.e. it really is generated
+--   * all 4 existing registrations came across as pending, none as paid, and
+--     paid agrees with payment_status on every row in both directions
+--   * those 4 are labelled payment_provider 'unknown', not 'paypal', because
+--     none of them was ever paid through anything
+--   * pass_orders, paypal_ipn_events and the new columns on passes all exist
 
 begin;
 
