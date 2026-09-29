@@ -1,7 +1,25 @@
 # Going live: the real-payment walkthrough
 
 For testing on production with a real, small payment instead of a sandbox environment.
-Covers steps 2–6 of the plan. **Read the two warnings first — one of them changes step 3.**
+Covers steps 2–6 of the plan. **Read the three warnings first — one of them changes step 3.**
+
+---
+
+## ⛔ Warning 0: do not start the walkthrough until Anna's account is proven
+
+**Anna must first confirm, directly in PayPal and outside this site, that her account can
+receive a payment and withdraw the money to her Georgian bank account.**
+
+Until that is done, do not create the test club and do not run any of the scenarios below.
+Everything from step 3 onwards assumes money can actually arrive and be taken out, and if
+it cannot, the failure will look like a problem with the site when it is not — you would be
+debugging the wrong thing, with a real payment stuck somewhere in between.
+
+This is the original blocker from the owner checklist, and it is still outstanding. It is
+not something the site can verify: no code here can tell whether a withdrawal cleared.
+
+Steps 1 and 2 — deploying, and configuring the PayPal account — are safe to do beforehand.
+Nothing below step 2 touches money.
 
 ---
 
@@ -73,6 +91,10 @@ wrong in this whole exercise.
 ---
 
 ## Step 3 — one real payment
+
+**Stop unless Warning 0 is cleared.** Anna must already have confirmed, in PayPal itself,
+that her account can receive a payment and withdraw it. Do not create the test club before
+that.
 
 Create the test club (see Warning 1), then book and pay it as a buyer would.
 
@@ -185,6 +207,12 @@ This is the step that matters most, and nothing in the code can tell you about i
 
 **This is the original blocker from the checklist.** Until a withdrawal completes, the whole
 approach is unproven, whatever the site does.
+
+Anna is proving this separately, in PayPal and outside the site — see Warning 0. If she has
+already done so, this step is only confirming that a payment made *through the site* behaves
+the same way as the one she made by hand. If she has not, stop here rather than going on to
+cleanup: a payment you cannot withdraw is the thing worth knowing about, and deleting the
+rows would throw away the evidence.
 
 ---
 
