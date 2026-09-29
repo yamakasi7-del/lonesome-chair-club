@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { type EmailOtpType } from "@supabase/supabase-js";
+import { type EmailOtpType, type User } from "@supabase/supabase-js";
 import { createServerAuthClient } from "@/lib/supabaseServerAuth";
+import { linkGuestBookings } from "@/lib/linkGuestBookings";
 
 // Where the magic link lands. Establishes the session by setting auth cookies,
 // then sends the person on to their profile.
@@ -23,15 +24,24 @@ export async function GET(req: NextRequest) {
 
   const supabase = await createServerAuthClient();
 
+  // Signing in is the moment Supabase has just proved this person controls the
+  // mailbox, which is what makes it safe to hand them bookings made with that
+  // address while signed out. Deliberately not allowed to fail the sign-in:
+  // linkGuestBookings swallows its own errors, and the next sign-in retries.
+  async function finishSignIn(user: User | null) {
+    if (user) await linkGuestBookings(user.id, user.email);
+    return NextResponse.redirect(`${origin}${next}`);
+  }
+
   if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) return finishSignIn(data.user);
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
   }
 
   if (tokenHash && type) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return NextResponse.redirect(`${origin}${next}`);
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    if (!error) return finishSignIn(data.user);
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error.message)}`);
   }
 
